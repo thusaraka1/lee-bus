@@ -1,7 +1,9 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { useSearchParams, useNavigate } from 'react-router-dom';
-import { Bus, Gauge, AlertTriangle, UserX, Wrench, MessageCircle, Mic, MicOff, Send } from 'lucide-react';
+import { Bus, Gauge, AlertTriangle, UserX, Wrench, MessageCircle, Mic, MicOff, Send, MapPin, Loader2 } from 'lucide-react';
 import EmergencyButton from './EmergencyButton';
+
+const API_URL = 'http://localhost:5000';
 
 const complaintTypes = [
   { id: 'overspeeding', label: 'Over\u00ADspeeding', icon: <Gauge size={26} />, cls: 'speed' },
@@ -14,16 +16,44 @@ const complaintTypes = [
 export default function ReportPage() {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
-  const busId = searchParams.get('bus') || 'BUS-0042';
+  const busId = searchParams.get('bus') || searchParams.get('busId') || '';
 
+  const [manualBusId, setManualBusId] = useState(busId);
   const [selected, setSelected] = useState(null);
   const [details, setDetails] = useState('');
   const [isRecording, setIsRecording] = useState(false);
   const [voiceText, setVoiceText] = useState('');
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [submitError, setSubmitError] = useState('');
+  const [passengerLocation, setPassengerLocation] = useState(null);
+  const [locationStatus, setLocationStatus] = useState('idle'); // idle, loading, success, error
   const recognitionRef = useRef(null);
 
   const now = new Date();
   const timestamp = now.toLocaleString('en-LK', { dateStyle: 'medium', timeStyle: 'short' });
+
+  // Get passenger's GPS location on mount
+  useEffect(() => {
+    if ('geolocation' in navigator) {
+      setLocationStatus('loading');
+      navigator.geolocation.getCurrentPosition(
+        (pos) => {
+          setPassengerLocation({
+            lat: pos.coords.latitude,
+            lng: pos.coords.longitude,
+          });
+          setLocationStatus('success');
+        },
+        (err) => {
+          console.warn('Geolocation error:', err.message);
+          setLocationStatus('error');
+        },
+        { enableHighAccuracy: true, timeout: 10000 }
+      );
+    } else {
+      setLocationStatus('error');
+    }
+  }, []);
 
   const handleVoice = () => {
     const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
@@ -57,18 +87,49 @@ export default function ReportPage() {
     setIsRecording(true);
   };
 
-  const handleSubmit = () => {
-    if (!selected) return;
-    // In production this would POST to the backend
-    const report = {
-      busId,
-      type: selected,
-      details,
-      timestamp: now.toISOString(),
-      location: null // would be filled by Geolocation API
-    };
-    console.log('Report submitted:', report);
-    navigate('/confirmed');
+  const handleSubmit = async () => {
+    const effectiveBusId = manualBusId.trim();
+    if (!selected || !effectiveBusId) return;
+
+    setIsSubmitting(true);
+    setSubmitError('');
+
+    try {
+      const response = await fetch(`${API_URL}/api/alerts`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          busId: effectiveBusId,
+          alertType: selected,
+          description: details || null,
+          passengerLat: passengerLocation?.lat || null,
+          passengerLng: passengerLocation?.lng || null,
+        }),
+      });
+
+      if (!response.ok) {
+        const errData = await response.json().catch(() => ({}));
+        throw new Error(errData.message || 'Failed to submit report');
+      }
+
+      const result = await response.json();
+
+      // Navigate to confirmation with alert data
+      navigate('/confirmed', {
+        state: {
+          alertId: result.id,
+          busId: effectiveBusId,
+          alertType: selected,
+          busLocation: result.busLocation,
+          busLocationAvailable: result.busLocationAvailable,
+        }
+      });
+    } catch (err) {
+      console.error('Submit error:', err);
+      setSubmitError(err.message || 'Failed to submit. Please try again.');
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
@@ -80,7 +141,42 @@ export default function ReportPage() {
         </div>
         <div className="bus-info">
           <h1>Safe Ride Guardian</h1>
-          <p>{busId} • {timestamp}</p>
+          <p>{manualBusId || 'Enter Bus Number'} • {timestamp}</p>
+        </div>
+      </div>
+
+      {/* Bus ID Input — shown when no bus ID from QR */}
+      <div className="bus-id-section">
+        <div className="section-title">
+          <Bus size={18} className="icon" />
+          Bus Number
+        </div>
+        <div className="bus-id-input-row">
+          <input
+            type="text"
+            className="bus-id-input"
+            placeholder="Enter bus number (e.g. WP-ND-1234)"
+            value={manualBusId}
+            onChange={(e) => setManualBusId(e.target.value)}
+          />
+          {manualBusId && (
+            <div className="bus-id-status">
+              <Bus size={14} /> {manualBusId}
+            </div>
+          )}
+        </div>
+
+        {/* Passenger location status */}
+        <div className="location-status">
+          {locationStatus === 'loading' && (
+            <span className="loc-badge loading"><Loader2 size={12} className="spin" /> Getting your location...</span>
+          )}
+          {locationStatus === 'success' && (
+            <span className="loc-badge success"><MapPin size={12} /> Location captured</span>
+          )}
+          {locationStatus === 'error' && (
+            <span className="loc-badge error"><MapPin size={12} /> Location unavailable</span>
+          )}
         </div>
       </div>
 
@@ -123,14 +219,34 @@ export default function ReportPage() {
         </div>
       </div>
 
+      {/* Error message */}
+      {submitError && (
+        <div className="submit-error">
+          <AlertTriangle size={16} /> {submitError}
+        </div>
+      )}
+
       {/* Submit */}
-      <button className="submit-btn" disabled={!selected} onClick={handleSubmit}>
-        <Send size={20} />
-        Submit Report
+      <button
+        className="submit-btn"
+        disabled={!selected || !manualBusId.trim() || isSubmitting}
+        onClick={handleSubmit}
+      >
+        {isSubmitting ? (
+          <>
+            <Loader2 size={20} className="spin" />
+            Sending Alert...
+          </>
+        ) : (
+          <>
+            <Send size={20} />
+            Submit Report
+          </>
+        )}
       </button>
 
       {/* SOS Button */}
-      <EmergencyButton busId={busId} />
+      <EmergencyButton busId={manualBusId} />
     </div>
   );
 }

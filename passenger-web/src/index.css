@@ -328,6 +328,179 @@ html, body, #root {
   box-shadow: 0 4px 15px var(--danger-glow);
 }
 
+/* ===== Bus ID Input ===== */
+.bus-id-section {
+  margin-bottom: 24px;
+}
+.bus-id-input-row {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.bus-id-input {
+  width: 100%;
+  padding: 14px 16px;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  color: var(--text);
+  font-family: 'Inter', sans-serif;
+  font-size: 1rem;
+  font-weight: 600;
+  outline: none;
+  transition: border-color 0.3s;
+  letter-spacing: 0.5px;
+}
+.bus-id-input:focus {
+  border-color: var(--accent);
+}
+.bus-id-input::placeholder {
+  color: var(--text-dim);
+  font-weight: 400;
+}
+.bus-id-status {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--accent);
+  padding: 4px 10px;
+  background: rgba(59, 130, 246, 0.1);
+  border-radius: 6px;
+  width: fit-content;
+}
+
+/* ===== Passenger Location Status ===== */
+.location-status {
+  margin-top: 10px;
+}
+.loc-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.75rem;
+  font-weight: 500;
+  padding: 4px 10px;
+  border-radius: 6px;
+}
+.loc-badge.loading {
+  color: var(--warning);
+  background: rgba(245, 158, 11, 0.1);
+}
+.loc-badge.success {
+  color: var(--success);
+  background: rgba(16, 185, 129, 0.1);
+}
+.loc-badge.error {
+  color: var(--text-dim);
+  background: rgba(100, 116, 139, 0.1);
+}
+
+/* ===== Submit Error ===== */
+.submit-error {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 16px;
+  background: rgba(239, 68, 68, 0.1);
+  border: 1px solid rgba(239, 68, 68, 0.25);
+  border-radius: 12px;
+  color: var(--danger);
+  font-size: 0.85rem;
+  font-weight: 500;
+  margin-bottom: 16px;
+}
+
+/* ===== Spinner ===== */
+.spin {
+  animation: spin 1s linear infinite;
+}
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+/* ===== Confirmation Detail Cards ===== */
+.confirm-detail-card {
+  width: 100%;
+  max-width: 320px;
+  padding: 14px 18px;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.confirm-label {
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--text-dim);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+.confirm-value {
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: var(--text);
+}
+
+/* ===== Confirmation Location Card ===== */
+.confirm-location-card {
+  width: 100%;
+  max-width: 340px;
+  padding: 16px;
+  background: rgba(16, 185, 129, 0.06);
+  border: 1px solid rgba(16, 185, 129, 0.2);
+  border-radius: 14px;
+}
+.location-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-weight: 700;
+  font-size: 0.95rem;
+  color: var(--success);
+  margin-bottom: 14px;
+}
+.location-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+.location-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  color: var(--text-muted);
+}
+.location-item svg {
+  flex-shrink: 0;
+  margin-top: 2px;
+}
+.loc-label {
+  display: block;
+  font-size: 0.7rem;
+  font-weight: 600;
+  color: var(--text-dim);
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+}
+.loc-value {
+  display: block;
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--text);
+}
+.location-note {
+  margin-top: 12px;
+  font-size: 0.72rem;
+  color: var(--text-dim);
+  text-align: center;
+  line-height: 1.4;
+}
+
 /* ===== Desktop Enhancement ===== */
 @media (min-width: 768px) {
   .app-shell {
